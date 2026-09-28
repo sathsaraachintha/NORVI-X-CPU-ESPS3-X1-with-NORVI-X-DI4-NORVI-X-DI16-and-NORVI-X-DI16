@@ -21,7 +21,6 @@ public:
       cfg.spi_3wire  = false;
       cfg.use_lock   = true;
       cfg.dma_channel = SPI_DMA_CH_AUTO;
-      // SPI Pins
       cfg.pin_sclk = 12; 
       cfg.pin_mosi = 11; 
       cfg.pin_miso = 13; 
@@ -42,7 +41,7 @@ public:
       cfg.dummy_read_pixel = 8;
       cfg.dummy_read_bits  = 1;
       cfg.readable         = true;
-      cfg.invert           = true; // ST7789 usually requires inverted colors
+      cfg.invert           = true; 
       cfg.rgb_order        = false;
       cfg.dlen_16bit       = false;
       cfg.bus_shared       = true; 
@@ -68,9 +67,15 @@ LGFX tft;
 #define IO_PB1  0  // "Next" Button
 #define IO_PB2  3  // "Previous" Button
 
-// Expansion Module I2C Addresses (Assuming Default DIP switch settings)
-#define DI8_ADDR  0x73 
-#define DI16_ADDR 0x74 
+// ==========================================
+// ⚠️ EXPANSION MODULE I2C ADDRESSES ⚠️
+// If DI8 or DI16 is "Not Found", check the 
+// Serial Monitor on boot to find the correct 
+// address and update these numbers:
+// ==========================================
+#define DI8_ADDR  0x73  
+#define DI16_ADDR 0x74  // Common alternatives: 0x76, 0x77, or 0x20
+// ==========================================
 
 // --- Objects & State Variables ---
 PCA9536 io;
@@ -86,6 +91,17 @@ void setup() {
 
   // Initialize I2C
   Wire.begin(SDA_PIN, SCL_PIN);
+
+  // --- I2C Auto-Scanner ---
+  Serial.println("\n--- I2C Scanner ---");
+  for (byte i = 8; i < 120; i++) {
+    Wire.beginTransmission(i);
+    if (Wire.endTransmission() == 0) {
+      Serial.print("Found I2C device at address: 0x");
+      Serial.println(i, HEX);
+    }
+  }
+  Serial.println("-------------------\n");
 
   // Initialize X-DI4 GPIO Pins
   pinMode(DI4_IN1, INPUT);
@@ -103,9 +119,9 @@ void setup() {
 
   // Initialize TFT Display
   tft.init();
-  tft.setRotation(1); // Landscape mode works best to fit 16 inputs on screen
+  tft.setRotation(0); // 0 = Portrait Mode (240x320)
   tft.fillScreen(TFT_BLACK);
-  tft.setTextSize(2);
+  tft.setTextSize(2); // Fits exactly 20 characters per line
 }
 
 void loop() {
@@ -116,23 +132,23 @@ void loop() {
   // Next Page (Button 1 Pressed)
   if (currentPb1 == LOW && lastPb1State == HIGH) {
     currentPage++;
-    if (currentPage > 2) currentPage = 0; // Loop back to start
-    tft.fillScreen(TFT_BLACK); // Clear screen on page change
-    delay(50); // Debounce
+    if (currentPage > 2) currentPage = 0; 
+    tft.fillScreen(TFT_BLACK); 
+    delay(50); 
   }
   lastPb1State = currentPb1;
 
   // Previous Page (Button 2 Pressed)
   if (currentPb2 == LOW && lastPb2State == HIGH) {
     currentPage--;
-    if (currentPage < 0) currentPage = 2; // Loop to end
-    tft.fillScreen(TFT_BLACK); // Clear screen on page change
-    delay(50); // Debounce
+    if (currentPage < 0) currentPage = 2; 
+    tft.fillScreen(TFT_BLACK); 
+    delay(50); 
   }
   lastPb2State = currentPb2;
 
 
-  // --- 2. Update Display (Every 100ms for fast response) ---
+  // --- 2. Update Display (Every 100ms) ---
   if (millis() - lastDisplayUpdate >= 100) {
     lastDisplayUpdate = millis();
     tft.setCursor(0, 5);
@@ -145,20 +161,20 @@ void loop() {
       displayDI16();
     }
     
-    // UI Navigation Hint
+    // UI Navigation Hint for Portrait (Max 20 chars)
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
-    tft.setCursor(10, 210);
-    tft.print(" [BTN 2: Prev]  [BTN 1: Next] ");
+    tft.setCursor(0, 260);
+    tft.println("--------------------");
+    tft.println("[B2: <]    [B1: >]");
   }
 }
-
 
 // --- Functions to Read and Display Each Module ---
 
 void displayDI4() {
   tft.setTextColor(TFT_GREEN, TFT_BLACK);
-  tft.println("   X-DI4 Input States   ");
-  tft.println("------------------------");
+  tft.println("   X-DI4 Inputs     ");
+  tft.println("--------------------");
   
   // Read direct GPIO pins
   bool in1 = digitalRead(DI4_IN1);
@@ -172,20 +188,19 @@ void displayDI4() {
   tft.printf(" IN 3: %s \n", in3 ? "ON " : "OFF");
   tft.printf(" IN 4: %s \n", in4 ? "ON " : "OFF");
   
-  // Padding lines to clear leftover text from larger pages
-  tft.println("                         "); 
-  tft.println("                         "); 
+  // Padding to clear screen leftover space
+  for(int i=0; i<4; i++) tft.println("                    "); 
 }
 
 void displayDI8() {
   tft.setTextColor(TFT_CYAN, TFT_BLACK);
-  tft.println("   X-DI8 Input States   ");
-  tft.println("------------------------");
+  tft.println("   X-DI8 Inputs     ");
+  tft.println("--------------------");
 
-  // Read 1 Byte from I2C Address 0x73
+  // Read 1 Byte from I2C
   uint8_t di8_states = 0;
   Wire.beginTransmission(DI8_ADDR);
-  Wire.write(0x00); // Input register
+  Wire.write(0x00); 
   if (Wire.endTransmission() == 0) {
     Wire.requestFrom(DI8_ADDR, 1);
     if (Wire.available()) {
@@ -193,7 +208,8 @@ void displayDI8() {
     }
   } else {
     tft.setTextColor(TFT_RED, TFT_BLACK);
-    tft.println(" X-DI8 Not Found!       ");
+    tft.println(" X-DI8 Not Found!   ");
+    for(int i=0; i<7; i++) tft.println("                    "); 
     return;
   }
 
@@ -206,36 +222,38 @@ void displayDI8() {
 
 void displayDI16() {
   tft.setTextColor(TFT_YELLOW, TFT_BLACK);
-  tft.println("   X-DI16 Input States  ");
-  tft.println("------------------------");
+  tft.println("   X-DI16 Inputs    ");
+  tft.println("--------------------");
 
-  // Read 2 Bytes from I2C Address 0x74
+  // Read 2 Bytes from I2C 
   uint16_t di16_states = 0;
   Wire.beginTransmission(DI16_ADDR);
-  Wire.write(0x00); // Input register 0
+  Wire.write(0x00); 
   if (Wire.endTransmission() == 0) {
     Wire.requestFrom(DI16_ADDR, 2);
     if (Wire.available() == 2) {
       uint8_t port0 = Wire.read();
       uint8_t port1 = Wire.read();
-      di16_states = (port1 << 8) | port0; // Combine into 16-bit integer
+      di16_states = (port1 << 8) | port0; 
     }
   } else {
     tft.setTextColor(TFT_RED, TFT_BLACK);
-    tft.println(" X-DI16 Not Found!      ");
+    tft.println(" X-DI16 Not Found!  ");
+    tft.println(" Check Serial Mon.  ");
+    for(int i=0; i<6; i++) tft.println("                    "); 
     return;
   }
 
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   
-  // Display in two columns for DI16 to fit on screen
+  // Display tightly in two columns for Portrait Mode
+  // Example output: " IN01:ON   IN09:OFF"
   for (int i = 0; i < 8; i++) {
-    bool stateA = bitRead(di16_states, i);       // IN 1-8
-    bool stateB = bitRead(di16_states, i + 8);   // IN 9-16
+    bool stateA = bitRead(di16_states, i);       
+    bool stateB = bitRead(di16_states, i + 8);   
     
-    // Formatting: Pad single digits for neat columns
-    tft.printf(" IN %d: %s  |  IN %-2d: %s \n", 
-                i + 1, stateA ? "ON " : "OFF", 
-                i + 9, stateB ? "ON " : "OFF");
+    tft.printf(" IN%02d:%-3s  IN%02d:%-3s\n", 
+                i + 1, stateA ? "ON" : "OFF", 
+                i + 9, stateB ? "ON" : "OFF");
   }
 }
