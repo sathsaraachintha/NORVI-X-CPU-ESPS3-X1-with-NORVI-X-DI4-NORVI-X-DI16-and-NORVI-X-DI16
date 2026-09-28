@@ -1,0 +1,12 @@
+{
+  "userId": "u_fc77dfc82af6666a",
+  "projectId": "NORVI-X-CPU-ESPS3-X1-with-NORVI-X-DI4-NORVI-X-DI16-and-NORVI-X-DI16",
+  "name": "NORVI-X-CPU-ESPS3-X1-with-NORVI-X-DI4-NORVI-X-DI16-and-NORVI-X-DI16",
+  "board": {
+    "fqbn": "esp32:esp32:esp32"
+  },
+  "selections": null,
+  "serial": null,
+  "createdAt": "2026-09-28T11:07:09.338Z",
+  "updatedAt": "2026-09-28T11:07:09.338Z"
+}
