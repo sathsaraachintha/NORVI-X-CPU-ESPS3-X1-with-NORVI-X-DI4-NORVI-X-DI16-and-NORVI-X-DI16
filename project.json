@@ -1,12 +1,35 @@
 {
-  "userId": "u_fc77dfc82af6666a",
-  "projectId": "NORVI-X-CPU-ESPS3-X1-with-NORVI-X-DI4-NORVI-X-DI16-and-NORVI-X-DI16",
+  "schemaVersion": 2,
   "name": "NORVI-X-CPU-ESPS3-X1-with-NORVI-X-DI4-NORVI-X-DI16-and-NORVI-X-DI16",
-  "board": {
-    "fqbn": "esp32:esp32:esp32"
+  "target": {
+    "framework": "arduino",
+    "board": "esp32:esp32:esp32s3",
+    "options": {
+      "CDCOnBoot": "cdc",
+      "CPUFreq": "240",
+      "DebugLevel": "none",
+      "DFUOnBoot": "default",
+      "EraseFlash": "none",
+      "EventsCore": "1",
+      "FlashMode": "qio",
+      "FlashSize": "16M",
+      "JTAGAdapter": "default",
+      "LoopCore": "1",
+      "MSCOnBoot": "default",
+      "PartitionScheme": "default",
+      "PSRAM": "enabled",
+      "UploadMode": "default",
+      "UploadSpeed": "115200",
+      "USBMode": "hwcdc",
+      "ZigbeeMode": "default"
+    }
   },
-  "selections": null,
-  "serial": null,
+  "serial": {
+    "baudRate": 115200
+  },
+  "build": {
+    "properties": []
+  },
   "createdAt": "2026-09-28T11:07:09.338Z",
-  "updatedAt": "2026-09-28T11:07:09.338Z"
+  "updatedAt": "2026-09-28T11:11:53.436Z"
 }
