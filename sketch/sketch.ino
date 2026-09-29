@@ -72,13 +72,13 @@ LGFX tft;
 // ==========================================
 // EXPANSION MODULE I2C ADDRESSES 
 // ==========================================
-#define DI16_ADDR 0x27  
-#define DA8_ADDR  0x73  
+#define DI16_ADDR 0x27 
+#define DI8_ADDR  0x73  
 // ==========================================
 
 // --- Objects & State Variables ---
 PCA9536 io;
-int currentPage = 0; // 0 = DI4, 1 = DA8, 2 = DI16
+int currentPage = 0; // 0 = DI4, 1 = DI8, 2 = DI16
 
 bool lastPb1State = HIGH;
 bool lastPb2State = HIGH;
@@ -118,7 +118,7 @@ void setup() {
 
   // Initialize TFT Display
   tft.init();
-  tft.setRotation(0); 
+  tft.setRotation(0); // 0 = Portrait Mode (240x320)
   tft.fillScreen(TFT_BLACK);
   tft.setTextSize(2); // Fits exactly 20 characters per line
 }
@@ -146,6 +146,7 @@ void loop() {
   }
   lastPb2State = currentPb2;
 
+
   // --- 2. Update Display (Every 100ms) ---
   if (millis() - lastDisplayUpdate >= 100) {
     lastDisplayUpdate = millis();
@@ -155,7 +156,7 @@ void loop() {
     if (currentPage == 0) {
       displayDI4();
     } else if (currentPage == 1) {
-      displayDA8();
+      displayDI8();
     } else if (currentPage == 2) {
       displayDI16();
     }
@@ -191,23 +192,23 @@ void displayDI4() {
   for(int i=0; i<4; i++) tft.println("                    "); 
 }
 
-void displayDA8() {
-  tft.setTextColor(TFT_ORANGE, TFT_BLACK); // distinct color for AC voltage
-  tft.println("   X-DA8 AC Inputs  ");
+void displayDI8() {
+  tft.setTextColor(TFT_CYAN, TFT_BLACK);
+  tft.println("   X-DI8 Inputs     ");
   tft.println("--------------------");
 
   // Read 1 Byte from I2C
-  uint8_t da8_states = 0;
-  Wire.beginTransmission(DA8_ADDR);
+  uint8_t di8_states = 0;
+  Wire.beginTransmission(DI8_ADDR);
   Wire.write(0x00); 
   if (Wire.endTransmission() == 0) {
-    Wire.requestFrom(DA8_ADDR, 1);
+    Wire.requestFrom(DI8_ADDR, 1);
     if (Wire.available()) {
-      da8_states = Wire.read();
+      di8_states = Wire.read();
     }
   } else {
     tft.setTextColor(TFT_RED, TFT_BLACK);
-    tft.println(" X-DA8 Not Found!   ");
+    tft.println(" X-DI8 Not Found!   ");
     tft.println(" Check connections. ");
     for(int i=0; i<6; i++) tft.println("                    "); 
     return;
@@ -215,8 +216,8 @@ void displayDA8() {
 
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   for (int i = 0; i < 8; i++) {
-    bool state = bitRead(da8_states, i);
-    tft.printf(" AC IN %d: %s \n", i + 1, state ? "ON " : "OFF");
+    bool state = bitRead(di8_states, i);
+    tft.printf(" IN %d: %s \n", i + 1, state ? "ON " : "OFF");
   }
 }
 
