@@ -72,7 +72,7 @@ LGFX tft;
 // ==========================================
 // EXPANSION MODULE I2C ADDRESSES 
 // ==========================================
-#define DI16_ADDR 0x27  // Your confirmed DI16 address
+#define DI16_ADDR 0x27  
 // ==========================================
 
 // --- Objects & State Variables ---
@@ -87,25 +87,13 @@ void setup() {
   Serial.begin(115200);
   delay(1000);
 
-  // Initialize I2C
   Wire.begin(SDA_PIN, SCL_PIN);
 
-  // --- I2C Auto-Scanner ---
-  Serial.println("\n--- I2C Scanner ---");
-  for (byte i = 8; i < 120; i++) {
-    Wire.beginTransmission(i);
-    if (Wire.endTransmission() == 0) {
-      Serial.print("Found I2C device at address: 0x");
-      Serial.println(i, HEX);
-    }
-  }
-  Serial.println("-------------------\n");
-
-  // Initialize X-DI4 GPIO Pins
-  pinMode(DI4_IN1, INPUT);
-  pinMode(DI4_IN2, INPUT);
-  pinMode(DI4_IN3, INPUT);
-  pinMode(DI4_IN4, INPUT);
+  // Initialize X-DI4 GPIO Pins (Using internal pullups just in case)
+  pinMode(DI4_IN1, INPUT_PULLUP);
+  pinMode(DI4_IN2, INPUT_PULLUP);
+  pinMode(DI4_IN3, INPUT_PULLUP);
+  pinMode(DI4_IN4, INPUT_PULLUP);
 
   // Initialize Built-in Buttons
   if (!io.begin()) {
@@ -117,9 +105,9 @@ void setup() {
 
   // Initialize TFT Display
   tft.init();
-  tft.setRotation(0); // 0 = Portrait Mode (240x320)
+  tft.setRotation(0); 
   tft.fillScreen(TFT_BLACK);
-  tft.setTextSize(2); // Fits exactly 20 characters per line
+  tft.setTextSize(2); 
 }
 
 void loop() {
@@ -130,18 +118,18 @@ void loop() {
   // Next Page (Button 1 Pressed)
   if (currentPb1 == LOW && lastPb1State == HIGH) {
     currentPage++;
-    if (currentPage > 1) currentPage = 0; // Loop back to start (only 2 pages now)
+    if (currentPage > 1) currentPage = 0; 
     tft.fillScreen(TFT_BLACK); 
-    delay(50); // Debounce
+    delay(50); 
   }
   lastPb1State = currentPb1;
 
   // Previous Page (Button 2 Pressed)
   if (currentPb2 == LOW && lastPb2State == HIGH) {
     currentPage--;
-    if (currentPage < 0) currentPage = 1; // Loop to end
+    if (currentPage < 0) currentPage = 1; 
     tft.fillScreen(TFT_BLACK); 
-    delay(50); // Debounce
+    delay(50); 
   }
   lastPb2State = currentPb2;
 
@@ -150,14 +138,13 @@ void loop() {
     lastDisplayUpdate = millis();
     tft.setCursor(0, 5);
 
-    // Route to the correct display page
     if (currentPage == 0) {
       displayDI4();
     } else if (currentPage == 1) {
       displayDI16();
     }
     
-    // UI Navigation Hint for Portrait (Max 20 chars)
+    // UI Navigation Hint 
     tft.setTextColor(TFT_WHITE, TFT_BLACK);
     tft.setCursor(0, 260);
     tft.println("--------------------");
@@ -172,11 +159,12 @@ void displayDI4() {
   tft.println("   X-DI4 Inputs     ");
   tft.println("--------------------");
   
-  // Read direct GPIO pins
-  bool in1 = digitalRead(DI4_IN1);
-  bool in2 = digitalRead(DI4_IN2);
-  bool in3 = digitalRead(DI4_IN3);
-  bool in4 = digitalRead(DI4_IN4);
+  // INVERT THE LOGIC using '!' 
+  // (Changes default '1' to '0' / OFF)
+  bool in1 = !digitalRead(DI4_IN1);
+  bool in2 = !digitalRead(DI4_IN2);
+  bool in3 = !digitalRead(DI4_IN3);
+  bool in4 = !digitalRead(DI4_IN4);
 
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   tft.printf(" IN 1: %s \n", in1 ? "ON " : "OFF");
@@ -184,7 +172,6 @@ void displayDI4() {
   tft.printf(" IN 3: %s \n", in3 ? "ON " : "OFF");
   tft.printf(" IN 4: %s \n", in4 ? "ON " : "OFF");
   
-  // Padding to clear screen leftover space
   for(int i=0; i<4; i++) tft.println("                    "); 
 }
 
@@ -193,32 +180,30 @@ void displayDI16() {
   tft.println("   X-DI16 Inputs    ");
   tft.println("--------------------");
 
-  // Read 2 Bytes from I2C 
   uint16_t di16_states = 0;
   Wire.beginTransmission(DI16_ADDR);
-  Wire.write(0x00); // Start reading at Input register 0
+  Wire.write(0x00); 
   if (Wire.endTransmission() == 0) {
     Wire.requestFrom(DI16_ADDR, 2);
     if (Wire.available() == 2) {
       uint8_t port0 = Wire.read();
       uint8_t port1 = Wire.read();
-      di16_states = (port1 << 8) | port0; // Combine into 16-bit integer
+      di16_states = (port1 << 8) | port0; 
     }
   } else {
     tft.setTextColor(TFT_RED, TFT_BLACK);
     tft.println(" X-DI16 Not Found!  ");
-    tft.println(" Check Serial Mon.  ");
+    tft.println(" Check connections. ");
     for(int i=0; i<6; i++) tft.println("                    "); 
     return;
   }
 
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
   
-  // Display tightly in two columns for Portrait Mode
-  // Output format: " IN01:ON   IN09:OFF"
   for (int i = 0; i < 8; i++) {
-    bool stateA = bitRead(di16_states, i);       
-    bool stateB = bitRead(di16_states, i + 8);   
+    // INVERT THE LOGIC using '!'
+    bool stateA = !bitRead(di16_states, i);       
+    bool stateB = !bitRead(di16_states, i + 8);   
     
     tft.printf(" IN%02d:%-3s  IN%02d:%-3s\n", 
                 i + 1, stateA ? "ON" : "OFF", 
