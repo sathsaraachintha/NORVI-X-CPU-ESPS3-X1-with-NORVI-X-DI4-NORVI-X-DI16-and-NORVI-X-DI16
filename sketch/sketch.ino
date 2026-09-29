@@ -72,13 +72,12 @@ LGFX tft;
 // ==========================================
 // EXPANSION MODULE I2C ADDRESSES 
 // ==========================================
-#define DI16_ADDR 0x27 
-#define DI8_ADDR  0x73  
+#define DI16_ADDR 0x27  // Your confirmed DI16 address
 // ==========================================
 
 // --- Objects & State Variables ---
 PCA9536 io;
-int currentPage = 0; // 0 = DI4, 1 = DI8, 2 = DI16
+int currentPage = 0; // 0 = DI4, 1 = DI16
 
 bool lastPb1State = HIGH;
 bool lastPb2State = HIGH;
@@ -131,7 +130,7 @@ void loop() {
   // Next Page (Button 1 Pressed)
   if (currentPb1 == LOW && lastPb1State == HIGH) {
     currentPage++;
-    if (currentPage > 2) currentPage = 0; 
+    if (currentPage > 1) currentPage = 0; // Loop back to start (only 2 pages now)
     tft.fillScreen(TFT_BLACK); 
     delay(50); // Debounce
   }
@@ -140,12 +139,11 @@ void loop() {
   // Previous Page (Button 2 Pressed)
   if (currentPb2 == LOW && lastPb2State == HIGH) {
     currentPage--;
-    if (currentPage < 0) currentPage = 2; 
+    if (currentPage < 0) currentPage = 1; // Loop to end
     tft.fillScreen(TFT_BLACK); 
     delay(50); // Debounce
   }
   lastPb2State = currentPb2;
-
 
   // --- 2. Update Display (Every 100ms) ---
   if (millis() - lastDisplayUpdate >= 100) {
@@ -156,8 +154,6 @@ void loop() {
     if (currentPage == 0) {
       displayDI4();
     } else if (currentPage == 1) {
-      displayDI8();
-    } else if (currentPage == 2) {
       displayDI16();
     }
     
@@ -190,35 +186,6 @@ void displayDI4() {
   
   // Padding to clear screen leftover space
   for(int i=0; i<4; i++) tft.println("                    "); 
-}
-
-void displayDI8() {
-  tft.setTextColor(TFT_CYAN, TFT_BLACK);
-  tft.println("   X-DI8 Inputs     ");
-  tft.println("--------------------");
-
-  // Read 1 Byte from I2C
-  uint8_t di8_states = 0;
-  Wire.beginTransmission(DI8_ADDR);
-  Wire.write(0x00); 
-  if (Wire.endTransmission() == 0) {
-    Wire.requestFrom(DI8_ADDR, 1);
-    if (Wire.available()) {
-      di8_states = Wire.read();
-    }
-  } else {
-    tft.setTextColor(TFT_RED, TFT_BLACK);
-    tft.println(" X-DI8 Not Found!   ");
-    tft.println(" Check connections. ");
-    for(int i=0; i<6; i++) tft.println("                    "); 
-    return;
-  }
-
-  tft.setTextColor(TFT_WHITE, TFT_BLACK);
-  for (int i = 0; i < 8; i++) {
-    bool state = bitRead(di8_states, i);
-    tft.printf(" IN %d: %s \n", i + 1, state ? "ON " : "OFF");
-  }
 }
 
 void displayDI16() {
