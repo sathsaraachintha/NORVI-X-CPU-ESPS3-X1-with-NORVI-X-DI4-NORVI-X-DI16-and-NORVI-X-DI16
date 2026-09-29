@@ -72,8 +72,8 @@ LGFX tft;
 // ==========================================
 // EXPANSION MODULE I2C ADDRESSES 
 // ==========================================
-#define DI16_ADDR 0x27  // Your confirmed DI16 address
-#define DA8_ADDR  0x73  // Your new DA8 address
+#define DI16_ADDR 0x27  
+#define DA8_ADDR  0x73  
 // ==========================================
 
 // --- Objects & State Variables ---
@@ -118,7 +118,7 @@ void setup() {
 
   // Initialize TFT Display
   tft.init();
-  tft.setRotation(0); // 0 = Portrait Mode (240x320)
+  tft.setRotation(0); 
   tft.fillScreen(TFT_BLACK);
   tft.setTextSize(2); // Fits exactly 20 characters per line
 }
